@@ -1,7 +1,8 @@
-from __future__ import print_function  #allows print as function
+from __future__ import print_function  # allows print as function
 
-import csv # see https://docs.python.org/2/library/csv.html
+import csv  # see https://docs.python.org/2/library/csv.html
 import sys
+
 
 class MarkGoogleQuiz: 
     def __init__(self, grade_file_header, fn, answer, scrub,pass_or_fail,print_stats):
@@ -10,7 +11,8 @@ class MarkGoogleQuiz:
         self.answer = answer
         self.SCRUB = scrub
         self.PASS_OR_FAIL = pass_or_fail
-        self.PRINT_STATS = print_stats        
+        self.PRINT_STATS = print_stats
+        self.VERBOSE = False
     
     def warning(*objs):
         print("WARNING: ", *objs, file=sys.stderr)
@@ -64,7 +66,7 @@ class MarkGoogleQuiz:
     # but same for all quizzes in a class, so leave it here until think of better idea
     
     def giant(self):
-        too_short_cdf_id = {
+        self.too_short_cdf_id = {
         "g4ag" :"g4ag__",
         "g4p" :"g4p__",
         "1234" : "1234_"
@@ -77,42 +79,37 @@ class MarkGoogleQuiz:
         MAP_FILE = '../CSC300H1S-ID-cdfuserid-map.txt'
         
         #map cdf userid's to number of correct answers on the quiz
-        grade = {}
+        self.grade = {}
         
         # maps over question 
-        correct_q = {} # how many students answered q[ix] correctly
-        answered_q = {}# how many students answered q[ix] 
-        response_count = {} #stats
+        self.correct_q = {} # how many students answered q[ix] correctly
+        self.answered_q = {}# how many students answered q[ix] 
+        self.response_count = {} #stats
         
-        num_answers = 0
+        self.num_answers = 0
         for a in self.answer:
-         correct_q[num_answers] = 0
-         answered_q[num_answers] = 0
-         response_count[num_answers] = {} #dict of answer to int
-         num_answers += 1
+         self.correct_q[self.num_answers] = 0
+         self.answered_q[self.num_answers] = 0
+         self.response_count[self.num_answers] = {} #dict of answer to int
+         self.num_answers += 1
         
         quit_because_student_got_zero = False #student getting zero is a clue to busted csv file
         
-        try:
-          VERBOSE
-        except NameError:
-          VERBOSE = False
-        
-        VERBOSE_INCORRECT = VERBOSE
+        VERBOSE_INCORRECT = self.VERBOSE
         VERBOSE_SKIP = True #VERBOSE
         
         with open(self.FN, 'rb') as csvfile:
-         spamreader = csv.reader(csvfile, delimiter=',', quotechar='|',dialect=csv.excel_tab)
+         csv_file_reader = csv.reader(csvfile, delimiter=',', quotechar='|',dialect=csv.excel_tab)
          first_line = True
-         for list_of_strings in spamreader:
+         for list_of_strings in csv_file_reader:
              if first_line:
                  squirrel = str(list_of_strings[4:])
                  first_line = False
                  continue
              #debug_message( list_of_strings)
              cdf_name = list_of_strings[1].lower()
-             if VERBOSE:
-                verbose_message( "about to process responses for:", cdf_name, list_of_strings)
+             if self.VERBOSE:
+                self.verbose_message( "about to process responses for:", cdf_name, list_of_strings)
         
              #debug_message( 'list_of_strings[1]', cdf_name)
              data = list_of_strings[2:]
@@ -122,35 +119,35 @@ class MarkGoogleQuiz:
                  if len(datum) == 0:
                     #debug_message( "zero length datum at ix=", ix)
                     continue #marking qi google forms seemed to toss in the occasional empty field??
-                 if ix >= num_answers: # will be more data fields in CSV than answers.
+                 if ix >= self.num_answers: # will be more data fields in CSV than answers.
                     break
-                 if VERBOSE:
-                    verbose_message( "verbose response:", ix, cdf_name, datum)
-                    verbose_message( "verbose  correct:", ix, cdf_name, self.answer[ix])
+                 if self.VERBOSE:
+                    self.verbose_message( "verbose response:", ix, cdf_name, datum)
+                    self.verbose_message( "verbose  correct:", ix, cdf_name, self.answer[ix])
                     
-                 answered_q[ix] += 1 # someone answered question ix
+                 self.answered_q[ix] += 1 # someone answered question ix
         
                  if self.answer[ix] == "SKIP_ME" :
-                    if VERBOSE_SKIP: verbose_message( "skipping question", ix)
+                    if VERBOSE_SKIP: self.verbose_message( "skipping question", ix)
                  else:
-                    if not datum in response_count[ix]:
-                        response_count[ix][datum] = 1;
-                    response_count[ix][datum] +=1
+                    if not datum in self.response_count[ix]:
+                        self.response_count[ix][datum] = 1;
+                    self.response_count[ix][datum] +=1
                     if datum == self.answer[ix]:
                        num_correct += 1   # cdf_name got question ix correct
-                       correct_q[ix] += 1 
+                       self.correct_q[ix] += 1 
                     else:
                        # cdf_name got question ix wrong
                        if VERBOSE_INCORRECT:
-                          verbose_message( cdf_name, ix, "incorrect" )
-                          verbose_message( "response:", datum)
-                          verbose_message( " correct:", self.answer[ix])
+                          self.verbose_message( cdf_name, ix, "incorrect" )
+                          self.verbose_message( "response:", datum)
+                          self.verbose_message( " correct:", self.answer[ix])
                  ix += 1
         
              #exit(1) # peek at first data line
              
-             DEBUG_PRINT_CORRECT = VERBOSE
-             if DEBUG_PRINT_CORRECT: verbose_message( cdf_name, "num_correct", num_correct, "of", num_answers)
+             DEBUG_PRINT_CORRECT = self.VERBOSE
+             if DEBUG_PRINT_CORRECT: self.verbose_message( cdf_name, "num_correct", num_correct, "of", self.num_answers)
         
              # all answers in datum incorrect.
              # take a look to see if something lexical is the problem for zero correct responses
@@ -171,14 +168,14 @@ class MarkGoogleQuiz:
                  exit(1)
         
         
-             grade[cdf_name] = num_correct
+             self.grade[cdf_name] = num_correct
         
         
         # create a list of the CDF id's we saw in the form response.
         # a really annoying thing is that a student's cdf name may be shorter than 5 chars
         # which is shorter than Jim's grading programs allow. hacks to follow.
         #
-        sorted_list_cdf_names = sorted(grade.keys())
+        sorted_list_cdf_names = sorted(self.grade.keys())
         
         #debug_message( "sorted_list_cdf_names", sorted_list_cdf_names)
         
@@ -186,7 +183,7 @@ class MarkGoogleQuiz:
         # need to filter out students that answer the quiz but are no longer enrolled
         # this was written as side effect of running init-grades.sh
         
-        cdf_id_to_student_number = {}
+        self.cdf_id_to_student_number = {}
         
         with open( MAP_FILE, 'rb') as csvfile:
          csv_reader = csv.reader(csvfile, delimiter=',', quotechar='|')
@@ -194,9 +191,9 @@ class MarkGoogleQuiz:
          for a_map in csv_reader:
             id = a_map[0]         #student number
             cdf_id = a_map[1]     #cdf userid
-            cdf_id_to_student_number[cdf_id] = id
+            self.cdf_id_to_student_number[cdf_id] = id
         
-        #debug_message( "cdf_id_to_student_number", cdf_id_to_student_number)
+        #debug_message( "cdf_id_to_student_number", self.cdf_id_to_student_number)
         
         # check for students who submitted a response but do not appear in the class list from CDF
         # happens when students drop course after writing a quiz
@@ -205,12 +202,12 @@ class MarkGoogleQuiz:
         if CHECK_MISSING_STUDENTS:
          is_missing_student = False
          for cdf_name in sorted_list_cdf_names:
-            if cdf_name in too_short_cdf_id.keys() :
-               cdf_userid_for_grades_files = too_short_cdf_id[cdf_name]
+            if cdf_name in self.too_short_cdf_id.keys() :
+               cdf_userid_for_grades_files = self.too_short_cdf_id[cdf_name]
             else:
                cdf_userid_for_grades_files = cdf_name.lower()
         
-            if not cdf_userid_for_grades_files in cdf_id_to_student_number:
+            if not cdf_userid_for_grades_files in self.cdf_id_to_student_number:
                 print( cdf_name, "is missing in cdf_id_to_student_number map")
                 is_missing_student = True
          if is_missing_student:
@@ -227,10 +224,10 @@ class MarkGoogleQuiz:
             if self.PASS_OR_FAIL:
                 gr = 1
             else:
-                gr = grade[cdf_name]
+                gr = self.grade[cdf_name]
         
-            if cdf_name in too_short_cdf_id.keys() :
-               cdf_userid_for_grades_files = too_short_cdf_id[cdf_name]
+            if cdf_name in self.too_short_cdf_id.keys() :
+               cdf_userid_for_grades_files = self.too_short_cdf_id[cdf_name]
             else:
                cdf_userid_for_grades_files = cdf_name.lower()
         
@@ -240,8 +237,8 @@ class MarkGoogleQuiz:
                  exit(2)
         
             #real work!
-            if cdf_userid_for_grades_files in cdf_id_to_student_number:
-                print( cdf_id_to_student_number[cdf_userid_for_grades_files] + "    " + cdf_userid_for_grades_files + "," + str(gr))
+            if cdf_userid_for_grades_files in self.cdf_id_to_student_number:
+                print( self.cdf_id_to_student_number[cdf_userid_for_grades_files] + "    " + cdf_userid_for_grades_files + "," + str(gr))
         
         if self.PRINT_STATS:
          STATS_FILE=self.FN+"-stats"
@@ -250,17 +247,17 @@ class MarkGoogleQuiz:
          
          ix = 0
          for a in self.answer:
-            s = "%4d: %3d/%3d" % ( ix, correct_q[ix],  answered_q[ix])
-            if answered_q[ix] != 0:
-               s += " %5.2f %%" % ( 100.0 * correct_q[ix]/ answered_q[ix] )
+            s = "%4d: %3d/%3d" % ( ix, self.correct_q[ix],  self.answered_q[ix])
+            if self.answered_q[ix] != 0:
+               s += " %5.2f %%" % ( 100.0 * self.correct_q[ix]/ self.answered_q[ix] )
             #debug_message( s)
             fs.write(s + "\n")
             ix += 1
          
          fs.write("\n\nquestion breakdown\n");
-         for q in response_count.keys():
+         for q in self.response_count.keys():
             fs.write( "------ Question %d -------\n" % (q))
-            qq = response_count[q]
+            qq = self.response_count[q]
             for a in qq.keys():
                 fs.write( "%4d %s\n" % ( qq[a], a )  )
          fs.close()
