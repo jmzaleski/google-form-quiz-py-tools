@@ -33,7 +33,9 @@ PASS_OR_FAIL = False
 
 PRINT_STATS = True
 
-q = mark_quiz.MarkGoogleQuiz(GRADE_FILE_HEADER,FN, answer, SCRUB, PASS_OR_FAIL, PRINT_STATS)
+MAP_FILE = '../CSC300H1S-ID-cdfuserid-map.txt'
+
+q = mark_quiz.MarkGoogleQuiz(GRADE_FILE_HEADER,FN, answer, MAP_FILE, SCRUB, PASS_OR_FAIL, PRINT_STATS)
 q.check_names()
 q.giant()
 

@@ -5,7 +5,7 @@ import sys
 
 
 class MarkGoogleQuiz: 
-    def __init__(self, grade_file_header, fn, answer, scrub,pass_or_fail,print_stats):
+    def __init__(self, grade_file_header, fn, answer, student_number_map_file, scrub,pass_or_fail,print_stats):
         self.GRADE_FILE_HEADER = grade_file_header
         self.FN = fn
         self.answer = answer
@@ -13,6 +13,9 @@ class MarkGoogleQuiz:
         self.PASS_OR_FAIL = pass_or_fail
         self.PRINT_STATS = print_stats
         self.VERBOSE = False
+        self.MAP_FILE = student_number_map_file
+        
+
     
     def warning(*objs):
         print("WARNING: ", *objs, file=sys.stderr)
@@ -71,12 +74,6 @@ class MarkGoogleQuiz:
         "g4p" :"g4p__",
         "1234" : "1234_"
         }
-        
-        SCRUB_ZERO_CORRECT = self.SCRUB
-        CHECK_MISSING_STUDENTS = False #SCRUB
-        
-        # edit this for each semester. maps UofT student number to CDF id
-        MAP_FILE = '../CSC300H1S-ID-cdfuserid-map.txt'
         
         #map cdf userid's to number of correct answers on the quiz
         self.grade = {}
@@ -153,7 +150,7 @@ class MarkGoogleQuiz:
              # take a look to see if something lexical is the problem for zero correct responses
              # print details here while responses still available
              if num_correct == 0:
-                if SCRUB_ZERO_CORRECT: # dump answers for students who got zero in detail
+                if self.SCRUB: # dump answers for students who got zero in detail
                  print( cdf_name, "** dumping because num_correct",num_correct)
                  ix = 0
                  for datum in data:
@@ -185,7 +182,7 @@ class MarkGoogleQuiz:
         
         self.cdf_id_to_student_number = {}
         
-        with open( MAP_FILE, 'rb') as csvfile:
+        with open( self.MAP_FILE, 'rb') as csvfile:
          csv_reader = csv.reader(csvfile, delimiter=',', quotechar='|')
         
          for a_map in csv_reader:
@@ -199,7 +196,7 @@ class MarkGoogleQuiz:
         # happens when students drop course after writing a quiz
         # oh bummer, what about the kids that have too short cdf user ids?
         #
-        if CHECK_MISSING_STUDENTS:
+        if self.SCRUB:
          is_missing_student = False
          for cdf_name in sorted_list_cdf_names:
             if cdf_name in self.too_short_cdf_id.keys() :
